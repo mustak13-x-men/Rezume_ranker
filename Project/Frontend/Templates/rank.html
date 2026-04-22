@@ -1,0 +1,56 @@
+{% extends "app_base.html" %}
+
+{% block title %}Rank Resumes | Resume Rank{% endblock %}
+{% block body_class %}page-body theme-nocturne{% endblock %}
+
+{% block page_content %}
+    <main class="page-card page-stack">
+        <section class="page-intro-grid">
+            <div>
+                <p class="eyebrow">Resume Ranking</p>
+                <h1>Compare resumes against a role description without losing mobile usability.</h1>
+                <p class="intro-text">Paste a job description to score the dataset, then review the top matches in a table that stays readable on narrow screens through horizontal scrolling.</p>
+            </div>
+            <article class="info-card">
+                <span class="status-pill">Top 10 Matches</span>
+                <h2>Rank by similarity</h2>
+                <p>The output keeps the strongest scoring resumes together so you can scan match quality quickly.</p>
+            </article>
+        </section>
+
+        <section class="dashboard-grid two-up">
+            <form method="post" class="form-card">
+                <p class="eyebrow">Job Description</p>
+                <label for="job_description">Paste the target role requirements</label>
+                <textarea id="job_description" name="job_description" rows="10" placeholder="Paste the job description here" required>{{ request.form.get('job_description', '') }}</textarea>
+                <div class="button-row">
+                    <button type="submit" class="primary-btn">Rank Resumes</button>
+                </div>
+            </form>
+
+            <article class="note-card">
+                <h2>How to use the ranking view</h2>
+                <ul class="detail-list">
+                    <li>Paste a real role description to get more meaningful similarity scores.</li>
+                    <li>Use the table on desktop for side-by-side scanning and on mobile for focused horizontal review.</li>
+                    <li>Pair ranking results with the history page when you want to compare your own uploaded resumes.</li>
+                </ul>
+            </article>
+        </section>
+
+        {% if results %}
+            <section class="table-shell">
+                <div class="section-heading split-heading">
+                    <div>
+                        <p class="eyebrow">Results</p>
+                        <h2 class="section-title">Top matching resumes</h2>
+                    </div>
+                    <p class="section-copy">The table below shows the highest-ranked samples for the job description you provided.</p>
+                </div>
+                <div class="table-responsive data-table-card">
+                    {{ results | safe }}
+                </div>
+            </section>
+        {% endif %}
+    </main>
+{% endblock %}

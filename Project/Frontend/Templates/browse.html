@@ -1,0 +1,61 @@
+{% extends "app_base.html" %}
+
+{% block title %}Browse Dataset | Resume Rank{% endblock %}
+{% block body_class %}page-body theme-lagoon{% endblock %}
+
+{% block page_content %}
+    <main class="page-card page-stack">
+        <section class="page-intro-grid">
+            <div>
+                <p class="eyebrow">Dataset Browser</p>
+                <h1>Explore resume samples with a filter flow that stays usable on small screens.</h1>
+                <p class="intro-text">Use a category filter to narrow the dataset, then scroll the table horizontally when space is tight without breaking the layout.</p>
+            </div>
+            <article class="info-card">
+                <span class="status-pill">Scrollable Table</span>
+                <h2>Filter by category</h2>
+                <p>Try categories like <strong>ENGINEERING</strong>, <strong>FINANCE</strong>, <strong>INFORMATION-TECHNOLOGY</strong>, or <strong>TEACHER</strong>.</p>
+            </article>
+        </section>
+
+        <section class="dashboard-grid two-up">
+            <article class="form-card">
+                <p class="eyebrow">Quick Filter</p>
+                <form method="get" class="filter-row">
+                    <div>
+                        <label for="category">Job Category</label>
+                        <input type="text" id="category" name="category" placeholder="Example: ENGINEERING, MARKETING, FINANCE" value="{{ request.args.get('category', '') }}">
+                    </div>
+                    <button type="submit" class="primary-btn">Apply Filter</button>
+                </form>
+            </article>
+
+            <article class="note-card">
+                <h2>Popular categories</h2>
+                <div class="chip-cloud">
+                    <span>ACCOUNTANT</span>
+                    <span>ADVOCATE</span>
+                    <span>ENGINEERING</span>
+                    <span>FINANCE</span>
+                    <span>HR</span>
+                    <span>INFORMATION-TECHNOLOGY</span>
+                    <span>PUBLIC-RELATIONS</span>
+                    <span>TEACHER</span>
+                </div>
+            </article>
+        </section>
+
+        <section class="table-shell">
+            <div class="section-heading split-heading">
+                <div>
+                    <p class="eyebrow">Dataset Table</p>
+                    <h2 class="section-title">Resume samples</h2>
+                </div>
+                <p class="section-copy">Showing up to 50 matching entries from the dataset.</p>
+            </div>
+            <div class="table-responsive data-table-card">
+                {{ table | safe }}
+            </div>
+        </section>
+    </main>
+{% endblock %}

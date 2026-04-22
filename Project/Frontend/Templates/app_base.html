@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block body %}
+    <div class="page-shell">
+        <nav class="navbar">
+            <a href="{{ url_for('index') }}" class="navbar-brand">
+                <span class="brand-mark">RR</span>
+                <span class="brand-copy">
+                    <span class="brand-name">Resume Rank</span>
+                    <span class="brand-tag">Responsive AI screening studio</span>
+                </span>
+            </a>
+
+            <div class="navbar-links">
+                {% if current_user.is_authenticated %}
+                    <span class="auth-info">Signed in as <strong>{{ current_user.username }}</strong></span>
+                    <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}is-active{% endif %}">Home</a>
+                    <a href="{{ url_for('browse') }}" class="{% if request.endpoint == 'browse' %}is-active{% endif %}">Browse</a>
+                    <a href="{{ url_for('rank_view') }}" class="{% if request.endpoint == 'rank_view' %}is-active{% endif %}">Rank</a>
+                    <a href="{{ url_for('history') }}" class="{% if request.endpoint == 'history' %}is-active{% endif %}">History</a>
+                    <a href="{{ url_for('auth.logout') }}" class="nav-cta">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}is-active{% endif %}">Home</a>
+                    <a href="{{ url_for('auth.login') }}" class="{% if request.endpoint == 'auth.login' %}is-active{% endif %}">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="nav-cta {% if request.endpoint == 'auth.register' %}is-active{% endif %}">Register</a>
+                {% endif %}
+            </div>
+        </nav>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-stack">
+                    {% for msg in messages %}
+                        <div class="flash-message">{{ msg }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block page_content %}{% endblock %}
+    </div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "app_base.html" %}
+
+{% block title %}Analysis History | Resume Rank{% endblock %}
+{% block body_class %}page-body theme-sand{% endblock %}
+
+{% block page_content %}
+    <main class="page-card page-stack">
+        <section class="page-intro-grid">
+            <div>
+                <p class="eyebrow">Saved History</p>
+                <h1>Review past analyses in a card layout that stays readable on any screen.</h1>
+                <p class="intro-text">Each saved entry keeps ATS and match data visible without forcing you into cramped desktop-only tables.</p>
+            </div>
+            <article class="info-card">
+                <span class="status-pill">Saved Entries</span>
+                <h2>{{ entries|length }} analysis{% if entries|length != 1 %}es{% endif %}</h2>
+                <p>Use this history to compare versions, track score changes, and revisit earlier job description matches.</p>
+            </article>
+        </section>
+
+        <div class="hero-stats compact-stats">
+            <article class="kpi-card">
+                <span class="kpi-label">Layout</span>
+                <strong>Card based review</strong>
+                <p>Designed for scanning on phones without collapsing the content.</p>
+            </article>
+            <article class="kpi-card">
+                <span class="kpi-label">Signals</span>
+                <strong>ATS and match scores</strong>
+                <p>Keep the most important numbers visible right inside each history card.</p>
+            </article>
+            <article class="kpi-card">
+                <span class="kpi-label">Follow-up</span>
+                <strong>Return anytime</strong>
+                <p>Use the saved entries as a quick way to compare revisions and outcomes.</p>
+            </article>
+        </div>
+
+        {% if entries | length == 0 %}
+            <div class="empty-state">
+                <p>No analyses saved yet.</p>
+                <p>Upload a resume and run an analysis to start building your history.</p>
+                <a href="{{ url_for('index') }}" class="primary-btn">Start Analyzing</a>
+            </div>
+        {% else %}
+            <ul class="history-list">
+                {% for e in entries %}
+                    <li class="history-card">
+                        <div class="history-card-header">
+                            <span class="history-date">{{ e.created_at.strftime('%B %d, %Y at %I:%M %p') if e.created_at else 'Unknown date' }}</span>
+                            <span class="score-badge">ATS: {{ "%.1f"|format(e.ats_score or 0) }}%</span>
+                        </div>
+
+                        {% if e.job_description %}
+                            <div class="history-jd">
+                                <strong>Job Description:</strong> {{ e.job_description[:220] }}{% if e.job_description|length > 220 %}...{% endif %}
+                            </div>
+                        {% else %}
+                            <div class="history-jd">
+                                <strong>Mode:</strong> Role suggestions only. No job description was provided.
+                            </div>
+                        {% endif %}
+
+                        <div class="history-stats">
+                            <div class="stat">
+                                <div class="stat-label">ATS Score</div>
+                                <div class="stat-value">{{ "%.1f"|format(e.ats_score or 0) }}%</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label">Match Score</div>
+                                <div class="stat-value">{{ "%.1f"|format(e.similarity or 0) }}%</div>
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </main>
+{% endblock %}

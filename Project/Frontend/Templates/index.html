@@ -1,0 +1,605 @@
+{% extends "app_base.html" %}
+
+{% block title %}Resume Rank | Responsive Resume Intelligence{% endblock %}
+{% block body_class %}page-body theme-sunrise{% endblock %}
+
+{% block page_content %}
+    <main class="page-card landing-shell">
+        <section class="hero-section">
+            <div class="hero-grid">
+                <div class="hero-copy">
+                    <p class="eyebrow">Responsive Resume Intelligence</p>
+                    <h1 class="hero-title">Screen resumes and job fits in a layout that stays sharp on every device.</h1>
+                    <p class="intro-text">Resume Rank gives you ATS scoring, keyword gaps, quality signals, and role suggestions in one clean workflow for desktop and mobile.</p>
+
+                    <div class="hero-actions">
+                        {% if current_user.is_authenticated %}
+                            <a href="{{ url_for('browse') }}" class="primary-btn">Explore Dataset</a>
+                            <a href="{{ url_for('history') }}" class="ghost-btn">Review History</a>
+                        {% else %}
+                            <a href="{{ url_for('auth.register') }}" class="primary-btn">Create Workspace</a>
+                            <a href="{{ url_for('auth.login') }}" class="ghost-btn">Sign In</a>
+                        {% endif %}
+                    </div>
+
+                    <ul class="hero-pills">
+                        <li>ATS score overview</li>
+                        <li>Missing keyword checks</li>
+                        <li>Responsive history and ranking tools</li>
+                    </ul>
+
+                    <div class="hero-stats">
+                        <article class="kpi-card">
+                            <span class="kpi-label">Accepted Files</span>
+                            <strong>PDF and DOCX</strong>
+                            <p>Upload from a phone, tablet, or laptop without changing the flow.</p>
+                        </article>
+                        <article class="kpi-card">
+                            <span class="kpi-label">Decision Support</span>
+                            <strong>Scores plus guidance</strong>
+                            <p>See ATS, quality, and fit signals together instead of scattered raw output.</p>
+                        </article>
+                        <article class="kpi-card">
+                            <span class="kpi-label">Next Actions</span>
+                            <strong>Practical edits</strong>
+                            <p>Turn missing sections, weak verbs, and format gaps into a quick checklist.</p>
+                        </article>
+                    </div>
+                </div>
+
+                <aside class="hero-panel">
+                    <div class="panel-head">
+                        <span class="status-pill">Live Analysis</span>
+                        <h2>Upload a resume and get an instant review panel.</h2>
+                        <p>Paste a job description for fit scoring, or leave it blank to receive role suggestions.</p>
+                    </div>
+
+                    <form id="resumeForm" class="form-card upload-card">
+                        <div class="field-grid">
+                            <div>
+                                <label for="resume">Upload Resume</label>
+                                <input type="file" id="resume" name="resume" accept=".pdf,.docx" required>
+                                <p class="field-note">Supported formats: PDF and DOCX. Keep the latest tailored version ready before uploading.</p>
+                            </div>
+                            <div>
+                                <label for="job_description">Job Description</label>
+                                <textarea id="job_description" name="job_description" rows="7" placeholder="Paste the job description here for similarity, skill match, and ATS comparison."></textarea>
+                            </div>
+                        </div>
+                        <div class="button-row">
+                            <button type="submit" class="primary-btn">Analyze Resume</button>
+                        </div>
+                    </form>
+
+                    <div class="micro-grid">
+                        <article class="micro-card">
+                            <h3>Clear score cards</h3>
+                            <p>ATS, quality, and job match metrics land in one responsive grid.</p>
+                        </article>
+                        <article class="micro-card">
+                            <h3>Actionable rewrites</h3>
+                            <p>Spot weak verbs, missing sections, and formatting issues quickly.</p>
+                        </article>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section class="section-block">
+            <div class="section-heading">
+                <p class="eyebrow">What You Get</p>
+                <h2 class="section-title">A tighter screening workflow from upload to improvement.</h2>
+                <p class="section-copy">The interface stays readable on narrow screens while still leaving room for richer diagnostics on desktop.</p>
+            </div>
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <h3>Fast score snapshot</h3>
+                    <p>Review ATS score, quality grade, and match strength without digging through raw output.</p>
+                </article>
+                <article class="feature-card">
+                    <h3>Keyword and skills gap</h3>
+                    <p>See what the resume already covers and what is still missing for the target role.</p>
+                </article>
+                <article class="feature-card">
+                    <h3>Saved review history</h3>
+                    <p>Keep past analyses available so you can compare progress and revisit earlier submissions.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section-block">
+            <div class="section-heading">
+                <p class="eyebrow">Review Flow</p>
+                <h2 class="section-title">Designed to feel good on mobile first, not just shrink down.</h2>
+            </div>
+            <div class="process-grid">
+                <article class="process-card">
+                    <span class="process-number">01</span>
+                    <h3>Upload</h3>
+                    <p>Add the resume and optional job description from any device.</p>
+                </article>
+                <article class="process-card">
+                    <span class="process-number">02</span>
+                    <h3>Analyze</h3>
+                    <p>The app computes ATS, quality, similarity, and missing keyword insights.</p>
+                </article>
+                <article class="process-card">
+                    <span class="process-number">03</span>
+                    <h3>Refine</h3>
+                    <p>Use the suggestions and optimization report to improve the next version.</p>
+                </article>
+            </div>
+        </section>
+
+        <section id="results" class="results-shell" aria-live="polite"></section>
+    </main>
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const form = document.getElementById("resumeForm");
+        const resultsDiv = document.getElementById("results");
+        let chartInstance = null;
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            resultsDiv.innerHTML = [
+                '<section class="loading-state">',
+                "<h3>Analyzing your resume</h3>",
+                "<p>We are checking ATS structure, quality signals, role fit, and improvement ideas.</p>",
+                "</section>"
+            ].join("");
+
+            try {
+                const response = await fetch("/analyze", {
+                    method: "POST",
+                    body: new FormData(form)
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(payload.error || "Unable to analyze the resume right now.");
+                }
+
+                renderResults(payload);
+                renderChart(payload);
+                addDownloadButton(payload);
+                resultsDiv.scrollIntoView({ behavior: "smooth", block: "start" });
+            } catch (error) {
+                resultsDiv.innerHTML = `<section class="error-state"><h3>Analysis failed</h3><p>${escapeHtml(error.message || "Unexpected error.")}</p></section>`;
+            }
+        });
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function formatNumber(value, digits = 1) {
+            const numeric = Number(value);
+            return Number.isFinite(numeric) ? numeric.toFixed(digits) : escapeHtml(value);
+        }
+
+        function titleCase(value) {
+            return String(value)
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (char) => char.toUpperCase());
+        }
+
+        function renderResults(data) {
+            const htmlParts = [];
+            htmlParts.push(
+                '<div class="results-header">' +
+                    '<div>' +
+                        '<p class="eyebrow">Analysis Results</p>' +
+                        '<h2 class="section-title">Resume diagnostic snapshot</h2>' +
+                        '<p class="section-copy">Use the panels below to understand ATS readiness, role fit, and the strongest next edits.</p>' +
+                    "</div>" +
+                "</div>"
+            );
+
+            htmlParts.push('<div class="results-grid">');
+            htmlParts.push(renderQuickScores(data));
+            htmlParts.push(renderQualitySnapshot(data.quality_metrics));
+            htmlParts.push(renderKeyFindings(data));
+            htmlParts.push("</div>");
+
+            const matchDetails = renderMatchDetails(data);
+            if (matchDetails) {
+                htmlParts.push(matchDetails);
+            }
+
+            if (data.ats_optimization_report) {
+                htmlParts.push(renderAtsReport(data.ats_optimization_report));
+                htmlParts.push(renderOptimizationDirection(data.ats_optimization_report));
+                htmlParts.push(renderKeywordGapAnalysis(data.ats_optimization_report));
+            }
+
+            htmlParts.push(renderListSection("Issues Found", data.resume_errors, "section-error"));
+            htmlParts.push(renderListSection("Suggested Improvements", data.suggested_improvements, "section-info"));
+            htmlParts.push(renderListSection("Career Advice", data.career_advice, "section-career"));
+            htmlParts.push(renderListSection("Job Suggestions", data.job_suggestions, "section-success"));
+
+            resultsDiv.innerHTML = htmlParts.filter(Boolean).join("");
+        }
+
+        function renderQuickScores(data) {
+            const metrics = [];
+
+            if (data.ats_score !== undefined) {
+                metrics.push(metricRow("ATS Score", `${formatNumber(data.ats_score)}/100`));
+            }
+            if (data.quality_score !== undefined) {
+                metrics.push(metricRow("Quality Score", `${formatNumber(data.quality_score)}/100`));
+            }
+            if (data.resume_grade !== undefined) {
+                metrics.push(metricRow("Resume Grade", escapeHtml(data.resume_grade)));
+            }
+            if (data.similarity !== undefined) {
+                metrics.push(metricRow("Job Match", `${formatNumber(data.similarity)}%`));
+            }
+            if (data.job_suitability_score !== undefined) {
+                metrics.push(metricRow("Suitability", `${formatNumber(data.job_suitability_score)}%`));
+            }
+
+            if (!metrics.length) {
+                metrics.push("<p class=\"muted-copy\">No score summary is available yet.</p>");
+            }
+
+            return [
+                '<article class="result-panel panel-accent">',
+                "<h3>Quick Scores</h3>",
+                `<div class="metric-stack">${metrics.join("")}</div>`,
+                "</article>"
+            ].join("");
+        }
+
+        function renderQualitySnapshot(metrics) {
+            if (!metrics) {
+                return [
+                    '<article class="result-panel panel-muted">',
+                    "<h3>Quality Snapshot</h3>",
+                    '<p class="muted-copy">Run an analysis to populate the quality breakdown.</p>',
+                    "</article>"
+                ].join("");
+            }
+
+            const sections = metrics.sections
+                ? Object.entries(metrics.sections).map(([section, present]) => (
+                    `<li class="${present ? "is-ready" : "is-missing"}"><span>${escapeHtml(titleCase(section))}</span><strong>${present ? "Ready" : "Missing"}</strong></li>`
+                )).join("")
+                : "";
+
+            const skillsCloud = Array.isArray(metrics.top_skills) && metrics.top_skills.length
+                ? `<div class="chip-cloud result-cloud">${metrics.top_skills.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>`
+                : '<p class="muted-copy">Top skills will appear here when they are detected.</p>';
+
+            return [
+                '<article class="result-panel panel-muted">',
+                "<h3>Quality Snapshot</h3>",
+                '<div class="metric-stack">',
+                metrics.word_count !== undefined ? metricRow("Word Count", escapeHtml(metrics.word_count)) : "",
+                metrics.readability ? metricRow("Readability", escapeHtml(metrics.readability)) : "",
+                metrics.completeness ? metricRow("Completeness", escapeHtml(metrics.completeness)) : "",
+                metrics.action_verb_count !== undefined ? metricRow("Action Verbs", escapeHtml(metrics.action_verb_count)) : "",
+                "</div>",
+                sections ? `<ul class="quality-list">${sections}</ul>` : "",
+                '<div class="result-subsection"><h4>Top Skills</h4>' + skillsCloud + "</div>",
+                "</article>"
+            ].join("");
+        }
+
+        function renderKeyFindings(data) {
+            const items = [];
+
+            if (Array.isArray(data.best_suited_roles) && data.best_suited_roles.length) {
+                items.push(`<li><strong>Best suited roles:</strong> ${data.best_suited_roles.map(escapeHtml).join(", ")}</li>`);
+            }
+            if (Array.isArray(data.skills_identified) && data.skills_identified.length) {
+                items.push(`<li><strong>Skills found:</strong> ${data.skills_identified.map(escapeHtml).join(", ")}</li>`);
+            }
+            if (data.skill_match !== undefined) {
+                items.push(`<li><strong>Skill match:</strong> ${formatNumber(data.skill_match)}%</li>`);
+            }
+            if (!items.length) {
+                items.push("<li>Upload a resume to see the highest-signal findings here.</li>");
+            }
+
+            return [
+                '<article class="result-panel panel-soft">',
+                "<h3>Key Findings</h3>",
+                `<ul class="detail-list">${items.join("")}</ul>`,
+                "</article>"
+            ].join("");
+        }
+
+        function renderMatchDetails(data) {
+            const items = [];
+
+            if (Array.isArray(data.missing_keywords) && data.missing_keywords.length) {
+                items.push(`<li><strong>Missing keywords:</strong> ${data.missing_keywords.map(escapeHtml).join(", ")}</li>`);
+            }
+            if (data.quality_metrics && data.quality_metrics.professional_language !== undefined) {
+                items.push(`<li><strong>Professional language markers:</strong> ${escapeHtml(data.quality_metrics.professional_language)}</li>`);
+            }
+            if (data.quality_metrics && data.quality_metrics.error_count !== undefined) {
+                items.push(`<li><strong>Detected writing issues:</strong> ${escapeHtml(data.quality_metrics.error_count)}</li>`);
+            }
+
+            if (!items.length) {
+                return "";
+            }
+
+            return [
+                '<section class="analysis-section section-info">',
+                "<h3>Match Details</h3>",
+                `<ul class="detail-list">${items.join("")}</ul>`,
+                "</section>"
+            ].join("");
+        }
+
+        function renderAtsReport(report) {
+            const boxes = [];
+
+            if (report.current_ats_score !== undefined || report.target_ats_score !== undefined || report.improvement_potential !== undefined) {
+                boxes.push([
+                    '<div class="report-box">',
+                    "<h4>Score Outlook</h4>",
+                    report.current_ats_score !== undefined ? `<p><strong>Current score:</strong> ${formatNumber(report.current_ats_score)}/100</p>` : "",
+                    report.target_ats_score !== undefined ? `<p><strong>Target score:</strong> ${escapeHtml(report.target_ats_score)}</p>` : "",
+                    report.improvement_potential !== undefined ? `<p><strong>Improvement potential:</strong> +${formatNumber(report.improvement_potential)}</p>` : "",
+                    report.estimated_improved_score !== undefined ? `<p><strong>Estimated improved score:</strong> ${formatNumber(report.estimated_improved_score)}/100</p>` : "",
+                    "</div>"
+                ].join(""));
+            }
+
+            if (Array.isArray(report.missing_sections) && report.missing_sections.length) {
+                boxes.push([
+                    '<div class="report-box">',
+                    "<h4>Missing Sections</h4>",
+                    `<ul class="detail-list">${report.missing_sections.map((section) => `<li>${escapeHtml(section)}</li>`).join("")}</ul>`,
+                    "</div>"
+                ].join(""));
+            }
+
+            if (Array.isArray(report.priority_recommendations) && report.priority_recommendations.length) {
+                boxes.push([
+                    '<div class="report-box">',
+                    "<h4>Priority Recommendations</h4>",
+                    `<ol class="ordered-list">${report.priority_recommendations.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>`,
+                    "</div>"
+                ].join(""));
+            }
+
+            if (report.weak_verbs_found > 0 && report.verb_replacements) {
+                const replacements = Object.entries(report.verb_replacements)
+                    .filter(([, suggestions]) => Array.isArray(suggestions) && suggestions.length)
+                    .map(([weakVerb, suggestions]) => `<li><strong>${escapeHtml(weakVerb)}</strong> -> ${escapeHtml(suggestions[0])}</li>`)
+                    .join("");
+
+                if (replacements) {
+                    boxes.push([
+                        '<div class="report-box">',
+                        `<h4>Action Verb Improvements (${escapeHtml(report.weak_verbs_found)})</h4>`,
+                        `<ul class="detail-list">${replacements}</ul>`,
+                        "</div>"
+                    ].join(""));
+                }
+            }
+
+            if (Array.isArray(report.current_skills_identified) && report.current_skills_identified.length) {
+                boxes.push([
+                    '<div class="report-box">',
+                    "<h4>Current Skills Identified</h4>",
+                    `<div class="chip-cloud result-cloud">${report.current_skills_identified.map((skill) => `<span>${escapeHtml(skill)}</span>`).join("")}</div>`,
+                    "</div>"
+                ].join(""));
+            }
+
+            if (!boxes.length) {
+                return "";
+            }
+
+            return [
+                '<section class="analysis-section">',
+                "<h3>ATS Optimization Report</h3>",
+                `<div class="report-grid">${boxes.join("")}</div>`,
+                "</section>"
+            ].join("");
+        }
+
+        function renderOptimizationDirection(report) {
+            const hasSummary = report && report.optimized_professional_summary;
+            const hasSkills = report && Array.isArray(report.suggested_skills_to_add) && report.suggested_skills_to_add.length;
+            const hasFormatting = report && Array.isArray(report.formatting_recommendations) && report.formatting_recommendations.length;
+            const hasDensity = report && report.ats_keyword_density;
+
+            if (!hasSummary && !hasSkills && !hasFormatting && !hasDensity) {
+                return "";
+            }
+
+            return [
+                '<section class="analysis-section section-career">',
+                "<h3>Optimization Direction</h3>",
+                hasSummary ? `<div class="summary-copy">${escapeHtml(report.optimized_professional_summary)}</div>` : "",
+                hasSkills ? (
+                    '<div class="result-subsection"><h4>Suggested Skills to Add</h4>' +
+                    `<div class="chip-cloud result-cloud">${report.suggested_skills_to_add.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>` +
+                    "</div>"
+                ) : "",
+                hasFormatting ? (
+                    '<div class="result-subsection"><h4>Formatting Recommendations</h4>' +
+                    `<ul class="detail-list">${report.formatting_recommendations.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` +
+                    "</div>"
+                ) : "",
+                hasDensity ? `<p class="metric-caption"><strong>ATS keywords:</strong> ${escapeHtml(report.ats_keyword_density)}</p>` : "",
+                "</section>"
+            ].join("");
+        }
+
+        function renderKeywordGapAnalysis(report) {
+            if (!report || !report.keyword_gaps || !Object.keys(report.keyword_gaps).length) {
+                return "";
+            }
+
+            const cards = Object.entries(report.keyword_gaps).map(([role, gap]) => {
+                const found = Array.isArray(gap.technical_found) && gap.technical_found.length
+                    ? `<p><strong>Found:</strong> ${gap.technical_found.map(escapeHtml).join(", ")}</p>`
+                    : "";
+                const missing = Array.isArray(gap.technical_missing) && gap.technical_missing.length
+                    ? `<p><strong>Missing:</strong> ${gap.technical_missing.map(escapeHtml).join(", ")}</p>`
+                    : "";
+
+                return [
+                    '<div class="report-box">',
+                    `<h4>${escapeHtml(role)}</h4>`,
+                    gap.coverage !== undefined ? `<p><strong>Coverage:</strong> ${formatNumber(gap.coverage)}%</p>` : "",
+                    found,
+                    missing,
+                    "</div>"
+                ].join("");
+            }).join("");
+
+            return [
+                '<section class="analysis-section section-success">',
+                "<h3>Role Keyword Coverage</h3>",
+                `<div class="report-grid">${cards}</div>`,
+                "</section>"
+            ].join("");
+        }
+
+        function renderListSection(title, items, className) {
+            if (!Array.isArray(items) || !items.length) {
+                return "";
+            }
+
+            return [
+                `<section class="analysis-section ${className}">`,
+                `<h3>${escapeHtml(title)}</h3>`,
+                `<ul class="detail-list">${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`,
+                "</section>"
+            ].join("");
+        }
+
+        function metricRow(label, value) {
+            return [
+                '<div class="metric-row">',
+                `<span class="metric-label">${escapeHtml(label)}</span>`,
+                `<span class="metric-value">${value}</span>`,
+                "</div>"
+            ].join("");
+        }
+
+        function renderChart(data) {
+            if (typeof Chart === "undefined") {
+                return;
+            }
+
+            const labels = [];
+            const values = [];
+
+            if (data.ats_score !== undefined) {
+                labels.push("ATS Score");
+                values.push(Number(data.ats_score));
+            }
+            if (data.similarity !== undefined) {
+                labels.push("Similarity");
+                values.push(Number(data.similarity));
+            }
+            if (data.quality_score !== undefined) {
+                labels.push("Quality Score");
+                values.push(Number(data.quality_score));
+            }
+
+            if (!labels.length) {
+                return;
+            }
+
+            const existingShell = document.getElementById("chartShell");
+            if (existingShell) {
+                existingShell.remove();
+            }
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const chartShell = document.createElement("section");
+            chartShell.id = "chartShell";
+            chartShell.className = "chart-shell";
+            chartShell.innerHTML = [
+                '<div class="section-heading split-heading">',
+                '<div><p class="eyebrow">Score Overview</p><h3 class="section-title">Visual comparison</h3></div>',
+                '<p class="section-copy">A quick chart view of the main numeric signals from the analysis.</p>',
+                "</div>"
+            ].join("");
+
+            const canvas = document.createElement("canvas");
+            canvas.id = "resultChart";
+            chartShell.appendChild(canvas);
+            resultsDiv.appendChild(chartShell);
+
+            chartInstance = new Chart(canvas, {
+                type: "bar",
+                data: {
+                    labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ["#114b5f", "#f4a259", "#2d6a4f"],
+                        borderRadius: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: "rgba(17, 75, 95, 0.10)"
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function addDownloadButton(data) {
+            const existingButton = document.getElementById("downloadBtn");
+            if (existingButton) {
+                existingButton.remove();
+            }
+
+            const button = document.createElement("button");
+            button.id = "downloadBtn";
+            button.className = "download-btn";
+            button.textContent = "Download JSON";
+            button.type = "button";
+            button.onclick = () => {
+                const link = document.createElement("a");
+                const file = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                link.href = URL.createObjectURL(file);
+                link.download = "analysis.json";
+                link.click();
+                URL.revokeObjectURL(link.href);
+            };
+
+            resultsDiv.appendChild(button);
+        }
+    </script>
+{% endblock %}
