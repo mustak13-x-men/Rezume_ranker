@@ -1,0 +1,15 @@
+Flask>=2.0
+scikit-learn
+nltk
+spacy
+pdfplumber
+python-docx
+textblob
+textstat
+unidecode
+sentence-transformers
+sqlalchemy
+flask-login
+chart.js
+FROM python:3.9-slim
+WORKDIR /app
