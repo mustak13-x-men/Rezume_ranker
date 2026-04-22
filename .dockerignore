@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.git/
+.venv/
+venv/
+env/
+__temp_pipreqsnb_folder/
+project/backend/__pycache__/
+project/backend/data/
+data/
+uploads/
+stored_resumes/
